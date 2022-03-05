@@ -1,9 +1,90 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
+import { createRef, useEffect, useState } from "react";
 import styles from "../styles/Home.module.css";
 
+interface Todo { content: string | undefined; color: string; isCompleted: boolean; };
+
+
+const colors = ["orange", "pink", "red", "blue","green"];
+
+
 const Home: NextPage = () => {
+
+  const inputRef = createRef<HTMLInputElement>();
+  const [selectedIndex, setColor] = useState(0);
+  const [editState, setEdit] = useState<{ isEditing: boolean, currentTodo: number }>({
+    isEditing: false,
+    currentTodo: -1,
+  });
+  const [todos, setTodo] = useState<Todo[]>([]);
+  const handlerSelectedColor = (index: number) => setColor(index);
+
+  const handlerSubmit = (e: any) => {
+
+    e.preventDefault();
+
+    if (!editState.isEditing && inputRef.current?.value != "") {
+
+      const todo = {
+        content: inputRef.current?.value.trim(),
+        color: colors[selectedIndex],
+        isCompleted: false,
+
+      };
+
+      setTodo([todo, ...todos]);
+
+    } else {
+
+      const newTodos = [...todos];
+
+      newTodos[editState.currentTodo] = {
+        ...newTodos[editState.currentTodo],
+        color: colors[selectedIndex],
+        content: inputRef!.current!.value
+      };
+
+      setTodo(newTodos);
+    }
+
+    e.target.reset();
+
+    cancelEdit();
+
+  }
+
+  const deleteTodo = (index: number) => {
+    var newTodos = todos.filter((_, _index) => _index != index);
+    setTodo(newTodos);
+    cancelEdit();
+  }
+
+  const startUpdateTodo = (index: number) => {
+    inputRef!.current!.value = todos[index].content ?? "";
+    setEdit({
+      isEditing: true,
+      currentTodo: index,
+    });
+
+    var _index = colors.indexOf(todos[index].color);
+
+    setColor(_index);
+  }
+
+  const cancelEdit  = ()=>{
+    setEdit({
+      isEditing: false,
+      currentTodo: -1,
+    });
+    inputRef!.current!.value = "";
+  }
+
+  useEffect(() => {
+    console.log(todos);
+  }, [todos]);
+
   return (
     <div className={styles.container}>
       <Head>
@@ -14,51 +95,13 @@ const Home: NextPage = () => {
 
       <div className={styles.todolist_component}>
 
-        <div className={styles.textbox}>
-          <input type="text" placeholder="Escribe el nombre de su tarea" />
-          <button className={styles.btn_submit}>+</button>
-        </div>
+        <form className={styles.textbox} onSubmit={handlerSubmit}>
+          <input type="text" placeholder="Escribe el nombre de su tarea" ref={inputRef} />
+          <button className={styles.btn_submit} type="submit">
+              {
+                editState.isEditing?
 
-        <div className={styles.colors}>
-          <div className={`${styles.color} active ${styles.yellow}`}></div>
-          <div className={styles.color+" "+styles.green}></div>
-          <div className={styles.color+" "+styles.blue}></div>
-          <div className={styles.color+" "+styles.pink}></div>
-        </div>
-
-        <div className={styles.todolist}>
-          <div className={styles.todo}>
-            <p>
-              Lorem ipsum, dolor sit amet consectetur adipisicing elit. Illum
-              quas doloribus molestias?
-            </p>
-            <button className={styles.todo_action+" "+styles.delete}>
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M3 6H5H21"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            <button className={styles.todo_action+" "+styles.edit}>
-              <svg
+                <svg
                 width="24"
                 height="24"
                 viewBox="0 0 24 24"
@@ -80,8 +123,102 @@ const Home: NextPage = () => {
                   strokeLinejoin="round"
                 />
               </svg>
+              :'+'
+              }
             </button>
+        </form>
+
+        <div className={styles.tools}>
+          <div className={styles.colors}>
+            {
+              colors.map((color, index) => <div
+                onClick={() => handlerSelectedColor(index)}
+                key={color}
+                className={styles.color}
+                style={{
+                  background: color,
+                  border: `${selectedIndex === index ? '2px solid black' : 'none'}`,
+                }}
+              ></div>)
+            }
+
           </div>
+
+          <button className={styles.btn} onClick={cancelEdit} disabled={!editState.isEditing}>
+            cancelar edicion
+          </button>
+        </div>
+
+        <div className={styles.todolist}>
+          {
+            todos.length > 0?
+            todos.map((todo, index) => <div key={index} className={styles.todo}>
+
+              <div className={styles.line} style={{ background: todo.color }}></div>
+
+              <p>
+                {todo.content}
+              </p>
+              <div>
+                <button className={styles.todo_action + " " + styles.delete}
+                  onClick={() => deleteTodo(index)}>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 6H5H21"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+
+                <button className={styles.todo_action + " " + styles.edit} onClick={() => startUpdateTodo(index)}>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M18 2L22 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7.5 20.5L19 9L15 5L3.5 16.5L2 22L7.5 20.5Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            )
+            :<div className={styles.skeleton}>
+              <h3>Sin trabajos</h3>
+            </div>
+          }
+
+
         </div>
       </div>
     </div>

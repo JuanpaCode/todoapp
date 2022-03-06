@@ -8,7 +8,7 @@ para comenzar en modo desarrollo simplemente ejecute
 
 ```bash
 npm run dev
-``
+```
 
 y abra [http://localhost:3000](http://localhost:3000) con tu navegador
 
